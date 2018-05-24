@@ -14,15 +14,12 @@ using NUnit.Framework;
 
 namespace Newtonsoft.Json.Tests.Serialization
 {
-
-
-
     [TestFixture]
     public class PretendObfuscationTests
     {
         public class TestModelClean
         {
-            public double? a { get; set; }
+            public int a { get; set; }
         }
 
         public class TestModelObfuscationBase
@@ -46,20 +43,7 @@ namespace Newtonsoft.Json.Tests.Serialization
                 new PropertyInfo[0], new object[0]
             );
             fieldBuilder.SetCustomAttribute(cab);
-            PropertyBuilder propertyBuilder = AddProperty(tb, "a", typeof(double?));
-
-            /*attributeType = typeof(JsonPropertyAttribute);
-            constructorInfo = attributeType.GetConstructor(new Type[]{typeof(string)});
-            Assert.IsTrue(constructorInfo != null);
-            cab = new CustomAttributeBuilder(
-                constructorInfo, new object[]{"a"},
-                new PropertyInfo[0], new object[0]
-            );
-            propertyBuilder.SetCustomAttribute(cab);*/
-
-
-
-
+            AddProperty(tb, "a", typeof(int));
 #if DNXCORE50
             TypeInfo typeInfo = tb.CreateTypeInfo();
             return typeInfo.AsType();
@@ -123,22 +107,45 @@ namespace Newtonsoft.Json.Tests.Serialization
             return property;
         }
 
+        /// <summary>
+        /// This test tries to deserialize to an artifical type that looks similar to what we can get after a obfuscation process.
+        /// The dynamicaly created type has the structure:
+        /// 
+        /// public class TestModelObfuscationBase {
+        ///     [NonSerialized]
+        ///     string a
+        /// }
+        /// 
+        /// public class TestModelWithObfuscation {
+        ///     [NonSerialized]
+        ///     new string a
+        /// 
+        ///     [ModelProperty(PropertyAlias = "a")]
+        ///     public double? a { get; set; }
+        /// }
+        /// 
+        /// 
+        /// </summary>
         [Test]
         public void DeserializeObfuscatedObject()
         {
             TestModelClean model = new TestModelClean();
-            model.a = 3.141;
+            model.a = 3;
             var json = JsonConvert.SerializeObject(model);
             Type dynamicType = CompileResultType();
             // 1. Test wheter we can activate the artifical type
             object modelDeserilized = Activator.CreateInstance(dynamicType, new object[0]);
             Assert.IsNotNull(modelDeserilized);
-            // 2. Test wheter we can deserialize this type with the default behavior
+            // 2. Test wheter we can deserialize this type.
             modelDeserilized = JsonConvert.DeserializeObject(json, dynamicType,  new JsonSerializerSettings()
             {
                 MissingMemberHandling = MissingMemberHandling.Error
             });
             Assert.IsNotNull(modelDeserilized);
+            PropertyInfo propertyInfoA = modelDeserilized.GetType().GetProperty("a", BindingFlags.Public | BindingFlags.Instance);
+            Assert.IsNotNull(propertyInfoA);
+            int valueDeserialized = (int)propertyInfoA.GetValue(modelDeserilized, null);
+            Assert.AreEqual(model.a, valueDeserialized);
         }
     }
 }
