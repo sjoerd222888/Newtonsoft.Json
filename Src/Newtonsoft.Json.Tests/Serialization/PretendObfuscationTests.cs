@@ -120,8 +120,7 @@ namespace Newtonsoft.Json.Tests.Serialization
         ///     [NonSerialized]
         ///     new string a
         /// 
-        ///     [ModelProperty(PropertyAlias = "a")]
-        ///     public double? a { get; set; }
+        ///     public int { get; set; }
         /// }
         /// 
         /// 
