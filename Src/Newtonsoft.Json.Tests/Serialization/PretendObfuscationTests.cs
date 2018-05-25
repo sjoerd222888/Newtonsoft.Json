@@ -116,7 +116,7 @@ namespace Newtonsoft.Json.Tests.Serialization
         ///     string a
         /// }
         /// 
-        /// public class TestModelWithObfuscation {
+        /// public class TestModelWithObfuscation : TestModelObfuscationBase {
         ///     [NonSerialized]
         ///     new string a
         /// 
